@@ -99,15 +99,13 @@ $$
 
 复杂的声音由是由正弦波组成，但问题来了，我们该如何知道，一个方波，锯齿波和三角波，需要加什么成分的正弦波，因此，我们可以借助傅里叶分析，将目标波形转换到频域，观察其中包含哪些谐波成分。
 
-这里有一个方波，在时域上展示如下
-
 而傅里叶变换告诉我们，这个波里面藏有1倍频（基波），3倍频（第三谐波），5倍频（第五谐波）等等，于是我们便得知，方波等于奇次谐波的叠加。
 
 在正文，为节约篇幅，我这里不必写出证明的详细过程，详细推导过程见附录 - 2
 
 ### 方波
 
-![Additive Square Wave](D:\Dev\kono3bpencil4301AudioLab.github.io\mini_audio_lab_src\Lesson_02\notes\Additive Square Wave.jpg)
+![方波](./additive_square_wave.jpg)
 $$
 \mathit{Square} = \frac{4}{\pi}\sum_{k=1}^{\infty}\frac{\sin\big((2k-1)\omega t\big)}{2k-1}
 $$
@@ -119,7 +117,7 @@ $$
 
 ### 锯齿波
 
-![Additive Saw Wave](D:\Dev\kono3bpencil4301AudioLab.github.io\mini_audio_lab_src\Lesson_02\notes\Additive Saw Wave.jpg)
+![锯齿波](./additive_saw_wave.jpg)
 $$
 \mathit{Sawtooth} = \frac{2}{\pi}\sum_{n=1}^{\infty}\frac{(-1)^{n+1}}{n}\sin(n\omega t)
 $$
@@ -131,7 +129,7 @@ $$
 
 ### 三角波
 
-![Additive Triangle Wave](D:\Dev\kono3bpencil4301AudioLab.github.io\mini_audio_lab_src\Lesson_02\notes\Additive Triangle Wave.jpg)
+![三角波](./additive_triangle_wave.jpg)
 $$
 \mathit{Triangle}= \frac{8}{\pi^2}\sum_{k=0}^{\infty}\frac{(-1)^k}{(2k+1)^2}\sin\big((2k+1)\omega t\big)
 $$
@@ -185,7 +183,7 @@ Oscillator
 相位(phase) → 当前振动位置
 ```
 
-#### 封装：放置外部乱修改
+#### 封装：防止外部乱修改
 
 我还给类当中的三个变量做了private封装，在振荡器对象当中，phase不是普通变量，它代表声音运行过程中的内部状态，每次进行采样，振荡器就向前移动一点，如果外部代码随便修改，把phase赋值999999，那么声音就乱了套。
 
@@ -287,9 +285,7 @@ f(t)=\frac{a_0}{2}+\sum_{n=1}^{\infty}\Bigl[a_n\cos(n\omega_0 t)+b_n\sin(n\omega
 $$
 
 
-## 附录 - 2 用傅里叶级数推算出常见波形的谐波规律
-
-### 方波
+## 附录 - 2 用傅里叶级数推算出方波的谐波规律
 
 方波的性质是中心对称，具有跃迁性，在周期为t，振幅为A的情况下，它的函数表达式如下：
 $$
@@ -314,29 +310,35 @@ $$
 &=0
 \end{aligned}
 $$
-得到a0=0。之后我们开始对a0下发到an，我们先求前半部分，即：
+得到a0=0。之后我们开始对a0下发到an，我们先求前半部分，
+
+由cos的积分公式
+$$
+\int_\ cos(n\omega_0 t) dt=\frac{1}{n \omega_0}sin(n\omega_n t)
+$$
+推算出前半部分：
 $$
 \begin{aligned}
 \int_{0}^{T/2} f(t)\,dt
-&=\frac{2A}{T}\int_{0}^{T/2}\cos(n\omega_n t)\\\
+&=\frac{2A}{T}\int_{0}^{T/2}\cos(n\omega_0 t)\\\
 &=\frac{2A}{T}\frac{1}{n\omega_0}\left[sin(n\omega_0\cdot\frac{T}{2})-sin0\right]\\
 &=\frac{2A}{n\omega_0T}sin(n\omega_0\cdot\frac{T}{2})
 \end{aligned}
 $$
-后半部分即
+以及后半部分：
 $$
 \begin{aligned}
 \int_{T/2}^{T} f(t)\,dt
-&=\frac{2A}{T}\int_{T/2}^{T}\cos(n\omega_n t)\,dt\\
-&=\frac{2A}{n\omega_0T}\left[sin(n\omega_0\cdot T)
+&=-\frac{2A}{T}\int_{T/2}^{T}\cos(n\omega_0 t)\,dt\\
+&=-\frac{2A}{n\omega_0T}\left[sin(n\omega_0\cdot T)
 -sin(n\omega_0\cdot\frac{T}{2})\right]\end{aligned}
 $$
-相加，得
+两式相加，得
 $$
 a_n=\frac{2A}{n\omega_0T}
 sin(n\omega_0\cdot\frac{T}{2})
 $$
-这里我们根据定义，得知T为周期，那么对应振动频率f0为**1/T**，而角频率**ω0**为三角函数每秒转过得弧度，根据高中物理，得知
+这里我们根据定义，得知T为周期，那么对应振动频率f0为**1/T**，而角频率**ω0**为三角函数每秒转过得弧度，根据高中物理，角频率，得知
 $$
 \omega_0 = 2\pi f_0 = \frac{2\pi}{T}
 $$
@@ -348,6 +350,46 @@ $$
 $$
 a_n=0
 $$
-这也就意味着该方波不存在余弦偶对称分量，也解释了为什么方波的偶次谐波振幅为0。
+这也就意味着该方波不存在余弦偶对称分量。
 
-同样，
+同样，奇次波（正弦分量系数）的方波公式为：
+$$
+b_n=\frac{2A}{T}\left[\int_{0}^{T/2}\sin(n\omega_0 t)\,dt+\int_{T/2}^{T}\sin(n\omega_0 t)\,dt\right]
+$$
+而sin的求积分公式如下：
+$$
+\int_\ sin(n\omega_0 t) dt=-\frac{1}{n \omega_0}cos(n\omega_0 t)
+$$
+那么前半部分的求积分结果如下：
+$$
+\begin{aligned}
+\int_{0}^{T/2} f(t)\,dt
+&=\frac{2A}{T}\int_{0}^{T/2}\sin(n\omega_0 t)\\\
+&=-\frac{2A}{n\omega_0T}\left[cos(n\omega_0\cdot\frac{T}{2})-1\right]\\
+\end{aligned}
+$$
+后半部分：
+$$
+\begin{aligned}
+\int_{T/2}^{T} f(t)\,dt
+&=-\frac{2A}{T}\int_{T/2}^{T}\sin(n\omega_0 t)\,dt\\
+&=\frac{2A}{n\omega_0T}\left[cos(n\omega_0\cdot T)
+-cos(n\omega_0\cdot\frac{T}{2})\right]\end{aligned}
+$$
+两式相加，得
+$$
+\frac{2A}{n\omega_0T}\left[1-2cos(n\omega_0\cdot\frac{T}{2}+)+cos(n\omega_0\cdot T)\right]
+$$
+把ω0T=2Pi, cos(2nπ)=1带进去，得
+$$
+b_n=\frac{2A}{n\pi}\left[1-cos(n\pi)\right]
+$$
+而这里[1-cos(nπ)]是方波特殊性质的有力证据，当n为偶数时，cos(nπ)=1，则bn=0，所以所有的偶次谐波全部消失，当n为奇数时，cos(nπ)=-1，则
+$$
+b_n=\frac{4A}{n\pi}
+$$
+这也就意味着，方波的傅里叶级数公式仅仅保留奇次项，再回到开头的公式，得到方波的傅里叶级数为：
+$$
+\mathit{Square} = \frac{4A}{\pi}\sum_{n=1}^{\infty}\frac{\sin\big((2n-1)\omega t\big)}{2n-1}
+$$
+其中，A为振幅，k为谐波的次数（由于仅仅存在奇次项谐波，因此是2n-1）
