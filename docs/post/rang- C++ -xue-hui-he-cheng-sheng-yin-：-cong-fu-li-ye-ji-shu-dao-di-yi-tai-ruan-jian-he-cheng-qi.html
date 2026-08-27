@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html data-color-mode="light" data-dark-theme="dark" data-light-theme="light" lang="zh-CN">
+<head>
+    <meta content="text/html; charset=utf-8" http-equiv="content-type" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <link href='https://mirrors.sustech.edu.cn/cdnjs/ajax/libs/Primer/21.0.7/primer.css' rel='stylesheet' />
+    
+    <link rel="icon" href="https://github.githubassets.com/favicons/favicon.svg"><script>
+        let theme = localStorage.getItem("meek_theme") || "light";
+        document.documentElement.setAttribute("data-color-mode", theme);
+    </script>
+<meta name="description" content="在上一期节目当中，我们讲述了如何“让计算机理解声音”这个问题。">
+<meta property="og:title" content="让 C++ 学会合成声音：从傅里叶级数到第一台软件合成器">
+<meta property="og:description" content="在上一期节目当中，我们讲述了如何“让计算机理解声音”这个问题。">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://kono3bpencil4301.github.io/kono3bpencil4301AudioLab.github.io/post/rang-%20C%2B%2B%20-xue-hui-he-cheng-sheng-yin-%EF%BC%9A-cong-fu-li-ye-ji-shu-dao-di-yi-tai-ruan-jian-he-cheng-qi.html">
+<meta property="og:image" content="https://github.githubassets.com/favicons/favicon.svg">
+<title>让 C++ 学会合成声音：从傅里叶级数到第一台软件合成器</title>
+<link href="//unpkg.com/@wooorm/starry-night@2.1.1/style/both.css" rel="stylesheet" />
+
+
+</head>
+<style>
+body{box-sizing: border-box;min-width: 200px;max-width: 900px;margin: 20px auto;padding: 45px;font-size: 16px;font-family: sans-serif;line-height: 1.25;}
+#header{display:flex;padding-bottom:8px;border-bottom: 1px solid var(--borderColor-muted, var(--color-border-muted));margin-bottom: 16px;}
+#footer {margin-top:64px; text-align: center;font-size: small;}
+
+</style>
+
+<style>
+.postTitle{margin: auto 0;font-size:40px;font-weight:bold;}
+.title-right{display:flex;margin:auto 0 0 auto;}
+.title-right .circle{padding: 14px 16px;margin-right:8px;}
+#postBody{border-bottom: 1px solid var(--color-border-default);padding-bottom:36px;}
+#postBody hr{height:2px;}
+#cmButton{height:48px;margin-top:48px;}
+#comments{margin-top:64px;}
+.g-emoji{font-size:24px;}
+@media (max-width: 600px) {
+    body {padding: 8px;}
+    .postTitle{font-size:24px;}
+}
+.copy-feedback {
+    display: none;
+    position: absolute;
+    top: 10px;
+    right: 50px;
+    color: var(--color-fg-on-emphasis);
+    background-color: var(--color-fg-muted);
+    border-radius: 3px;
+    padding: 5px 8px;
+    font-size: 12px;
+}
+</style>
+
+
+
+
+<body>
+    <div id="header">
+<h1 class="postTitle">让 C++ 学会合成声音：从傅里叶级数到第一台软件合成器</h1>
+<div class="title-right">
+    <a href="https://kono3bpencil4301.github.io/kono3bpencil4301AudioLab.github.io" id="buttonHome" class="btn btn-invisible circle" title="首页">
+        <svg class="octicon" width="16" height="16">
+            <path id="pathHome" fill-rule="evenodd"></path>
+        </svg>
+    </a>
+    
+    <a href="https://github.com/kono3bpencil4301/kono3bpencil4301AudioLab.github.io/issues/3" target="_blank" class="btn btn-invisible circle" title="Issue">
+        <svg class="octicon" width="16" height="16">
+            <path id="pathIssue" fill-rule="evenodd"></path>
+        </svg>
+    </a>
+    
+
+    <a class="btn btn-invisible circle" onclick="modeSwitch();" title="切换主题">
+        <svg class="octicon" width="16" height="16" >
+            <path id="themeSwitch" fill-rule="evenodd"></path>
+        </svg>
+    </a>
+
+</div>
+</div>
+    <div id="content">
+<div class="markdown-body" id="postBody"><p>在上一期节目当中，我们讲述了如何“让计算机理解声音”这个问题。但如果我们只能记录声音，那么计算机只能成为一个高级录音机，对于电子音乐，更重要的问题是：</p>
+<p>如果没有真实的乐器，那么计算机能否从零创造出一个声音呢？</p>
+<p>事实上，现代合成器的核心，就是通过数字建模的方式来创造出声音的。本期节目，我们将从数学公式的角度来探讨，如何从最基础的正弦波，通过数学方法构造复杂波形，并最终逐渐变成我们熟悉的波表。</p>
+<p>你们是不是一听到数学公式，一听到傅里叶级数，就开始头疼了，但别担心，本期节目并不会为难大家，因此我会用尽量用通俗的语言去描述傅里叶级数，以及涉及到的数学公式。</p>
+<h2>什么是傅里叶级数</h2>
+<p>傅里叶级数，与傅里叶变换是互补的关系，如果傅里叶变换像是一台频谱分析仪，帮助我们发现声音里面隐藏了哪些频率成分，那傅里叶级数则是研究信号该怎么重新构成一个周期信号，怎么从最基础的正弦波组装成一个个复杂的周期信号，就是傅里叶级数所研究的，而加法合成就是典型的傅里叶级数的应用。</p>
+<p>就比如一把小提琴的声波，用信号来拆解小提琴的波形，将小提琴的波形分析并拆解出一个个不同频率、不同振幅和不同相位的波形，就是对小提琴声音信号的傅里叶变换。然后我们根据手中已知的条件，来对正弦波形进行叠加，理论上能拟合出各种波形，这种操作就是傅里叶级数的一种。</p>
+<p>到这里，就牵扯出一些问题出来：</p>
+<ol>
+<li>为什么是正弦波而不是其他类型的波形</li>
+<li>为什么通过叠加波形，理论上能合成任意的波形？</li>
+<li>这对我们合成常见的波形有什么帮助呢？</li>
+</ol>
+<p>因此，我们针对以上问题一一回答。</p>
+<h2>为什么是正弦函数</h2>
+<p>在开始介绍加法合成之前，我们先回答一个问题：为什么计算机合成声音时，几乎总是从正弦波开始？</p>
+<p>答案就藏在人们对自然振荡的研究当中。</p>
+<p>首先严格来说，这里应该称为<strong>正弦函数和余弦函数</strong>，因为两者本质上只是相位不同：</p>
+<p>$$
+y=\cos\left(2\pi f t\right)=\sin\left(2\pi f t+\frac{\pi}{2}\right)
+$$</p>
+<p>高中数学告诉过我们，正弦函数与余弦函数在坐标系上几乎相同，它们本质上描述的是同一周期的周期运动，只是在时间轴上存在一个偏移，而神奇的地方在于：<strong>正弦函数似乎天生就是为描述振动而存在的。</strong></p>
+<p>在高中物理当中，我们学过简谐运动，这些系统最简单、最理想化的运动形式，都满足：</p>
+<p>$$
+x(t)=Acos(ωt+ϕ)
+$$</p>
+<p>也就是说，一个物体如果受到与位移成正比、方向相反的恢复力，它的运动轨迹天然就是正弦曲线。它正好就是正弦或余弦函数的形式。</p>
+<p>但是，这还不是全部，真正让正弦函数特殊的是，它拥有一种近乎不可思议的性质：<strong>求导之后，它依然保持自己的形态。</strong></p>
+<p>$$
+\frac{d}{dx}\sin(x)=\cos(x)
+$$</p>
+<p>$$
+\frac{d}{dx}\cos(x)=-\sin(x)
+$$</p>
+<p>而我们也可以发现一个规律，对Sin不断求导，最终都会陷入一个循环</p>
+<pre class="notranslate"><code class="notranslate">sin
+ ↓ 求导
+cos
+ ↓ 求导
+-sin
+ ↓ 求导
+-cos
+ ↓ 求导
+sin
+</code></pre>
+<p>这意味着很多事，在本期节目当中，位移，速度，加速度，本质上就是不断求导的关系。而对于正弦运动，位移、速度、加速度虽然大小不断变化，但始终保持同样的周期结构。而作为求导的“逆运算”的部分，求积分也是如此。</p>
+<p>$$
+∫sin(x)dx=−cos(x)
+$$</p>
+<p>于是，在自然界中，通过运算机械振动，最终能推导出争先运动，微积分运动能推算出正弦函数保持的自身运动形式，而在工程学当中，信号系统，也可以用正弦波来分析与运算了。</p>
+<p>因此，傅里叶变换此时也提醒着我们：<strong>任何复杂的周期信号，都可以分解为多个不同频率的正弦波。</strong></p>
+<h2>为什么理论上，可以合成任意的周期波形呢</h2>
+<p>如果正弦波只是一个简单的单频振荡，那么它为什么能够成为电子音乐的基础？答案就来自于傅里叶级数，傅里叶级数告诉我们：**一个满足一定条件的周期信号，可以被拆解为无数个不同频率的正弦和余弦波之和。**类似绘画中的三原色，一个复杂的颜料颜色，可以由红黄蓝混合而成，同样，一个复杂声音，也可以拆分成</p>
+<pre class="notranslate"><code class="notranslate">440Hz + 880Hz + 1320Hz + ......
+</code></pre>
+<p>这些频率组合起来，就是声音的音色了。</p>
+<h3>为什么说是“理论上”呢</h3>
+<p>这里的“理论上”，并不是为了增加一个数学限定，而是因为现实中的计算机存在两个限制：数学上的傅里叶级数，需要无数多个正弦波，但计算机不可能真的计算无限次。除此之外，某些特殊波形在逼近过程中会产生误差，需要考虑<strong>吉布斯现象</strong>。</p>
+<p>为了完全还原一个理想波形，需要加入无限多个正弦波。如果只加入<strong>第一谐波</strong>，就只得到接近正弦波的信号，然后，慢慢加入第三，第五，第七，波形开始变方，加入越来越多的奇次谐波，会逼近理想方波。</p>
+<p>而且，我们还得考虑第一章讲的采样率，即44.1kHz，因此我们不能叠加过多的谐波，根据奈奎斯特定律，最好最高的谐波频率不能超过采样率的一半，否则就会产生混叠现象。因此，我们对谐波的次数需要进行一定的限制。</p>
+<p>此外，当我们用正弦波逼近一些存在突变的波形时，会出现一个奇妙现象：即使加入越来越多的谐波，波形在突变位置附近依然会产生一个小幅度振铃。这个现象叫做<strong>吉布斯现象</strong>。</p>
+<p>吉布斯现象，简而言之，就是当你用傅里叶级数去逼近理想的波形时，在实际函数的间断点附近永远会冒出高度恒定的过冲尖峰，且随着波形的叠加，尖峰的宽度也会无限压缩，但高度永远不会减少。</p>
+<p>吉布斯现象在方波这种包含突变的波形当中，体现的最为明显，现在我们在脉冲波的间断点处放大，可以看出在尖端处确实存在一定的尖刺。</p>
+<h2>我们该如何合成常见的波形？</h2>
+<p>复杂的声音由是由正弦波组成，但问题来了，我们该如何知道，一个方波，锯齿波和三角波，需要加什么成分的正弦波，因此，我们可以借助傅里叶分析，将目标波形转换到频域，观察其中包含哪些谐波成分。</p>
+<p>而傅里叶变换告诉我们，这个波里面藏有1倍频（基波），3倍频（第三谐波），5倍频（第五谐波）等等，于是我们便得知，方波等于奇次谐波的叠加。</p>
+<p>在正文，为节约篇幅，我这里不必写出证明的详细过程，详细推导过程见附录 - 2</p>
+<h3>方波</h3>
+<p><a target="_blank" rel="noopener noreferrer" href="https://github.com/user-attachments/assets/ad550709-030a-4d9a-96dd-51a1b78ed0f6"><img width="1235" height="330" alt="Image" src="https://github.com/user-attachments/assets/ad550709-030a-4d9a-96dd-51a1b78ed0f6" style="max-width: 100%; height: auto; max-height: 330px;; aspect-ratio: 1235 / 330; background-color: var(--bgColor-muted); border-radius: 6px" class="js-gh-image-fallback"></a></p>
+<p>$$
+\mathit{Square} = \frac{4}{\pi}\sum_{k=1}^{\infty}\frac{\sin\big((2k-1)\omega t\big)}{2k-1}
+$$</p>
+<p>其逐项展开式为：</p>
+<p>$$
+\mathrm{Square}(t)=\frac{4}{\pi}\Big(\sin(\omega t)+\frac{1}{3}\sin(3\omega t)+\frac{1}{5}\sin(5\omega t)+\dots\Big)
+$$</p>
+<p>在方波当中，我们可以注意到它并没有拥有偶次分量，方波是具有特殊对称性的波形，而波形的对称性决定了哪些频率成分会出现。</p>
+<h3>锯齿波</h3>
+<p><a target="_blank" rel="noopener noreferrer" href="https://github.com/user-attachments/assets/5c28bd9b-c2a8-4801-915b-9a1d9650cbe4"><img width="1179" height="317" alt="Image" src="https://github.com/user-attachments/assets/5c28bd9b-c2a8-4801-915b-9a1d9650cbe4" style="max-width: 100%; height: auto; max-height: 317px;; aspect-ratio: 1179 / 317; background-color: var(--bgColor-muted); border-radius: 6px" class="js-gh-image-fallback"></a></p>
+<p>$$
+\mathit{Sawtooth} = \frac{2}{\pi}\sum_{n=1}^{\infty}\frac{(-1)^{n+1}}{n}\sin(n\omega t)
+$$</p>
+<p>其逐项展开式为：</p>
+<p>$$
+\mathrm{Sawtooth}(t)=\frac{1}{\pi}\Big(\sin(\omega t)+\frac{1}{2}\sin(2\omega t)+\frac{1}{3}\sin(3\omega t)+\dots\Big)
+$$</p>
+<p>锯齿波拥有所有整数谐波，公式当中，由于拥有丰满的锯齿波谐波，因此其高频谐波较完整，很多经典音色，如Supersaw（甚至从名字当中可以看出），Acid音色，Reese音色都是拿Saw音色做基底的。</p>
+<h3>三角波</h3>
+<p><a target="_blank" rel="noopener noreferrer" href="https://github.com/user-attachments/assets/0352a0a1-972e-47c5-9924-0e7cd9155644"><img width="1227" height="310" alt="Image" src="https://github.com/user-attachments/assets/0352a0a1-972e-47c5-9924-0e7cd9155644" style="max-width: 100%; height: auto; max-height: 310px;; aspect-ratio: 1227 / 310; background-color: var(--bgColor-muted); border-radius: 6px" class="js-gh-image-fallback"></a></p>
+<p>$$
+\mathit{Triangle}= \frac{8}{\pi^2}\sum_{k=0}^{\infty}\frac{(-1)^k}{(2k+1)^2}\sin\big((2k+1)\omega t\big)
+$$</p>
+<p>其逐项展开式为：<br>
+$$<br>
+\mathrm{Triangle}(t)=\frac{8}{\pi^2}\Big(\sin(\omega t)-\frac{1}{9}\sin(3\omega t)+\frac{1}{25}\sin(5\omega t)-\dots\Big)<br>
+$$</p>
+<p>三角波和方波一样，只有奇次谐波，但衰减是呈平方的形式进行衰减的，相较于方波衰减的更快。由于高层次谐波较少，因此相较于方波和锯齿波，三角波听感上更加柔和。</p>
+<h2>C++的语言实现</h2>
+<p>接下来，我们接着来写C++的语言实现。</p>
+<h3>面向对象的类与封装</h3>
+<p>想象一下，如果你不用面向对象，最简单的写法就是这样</p>
+<div class="highlight highlight-source-c++"><pre class="notranslate"><span class="pl-k">float</span> <span class="pl-en">sineWave</span>(<span class="pl-k">float</span> frequency,<span class="pl-k">float</span> amplitude,<span class="pl-k">float</span> phase)
+{
+    <span class="pl-k">return</span> amplitude * <span class="pl-c1">sin</span>(phase);
+}</pre></div>
+<p>然后，我们声明很多个变量，最后叠加起来，不是不可以用。但，如果对于大型音频工程，后续想加入100个谐波，ADSR包络，滤波器等等，代码量就会迅速膨胀，因此我们需要一个可以保存状态的东西——<strong>对象</strong>。</p>
+<h4>Class：把现实中的振荡器变成代码对象</h4>
+<p>在当前代码中，我规定了一个Oscillator类，包含频率，响度和相位这些变量，还有process这个公开的函数</p>
+<div class="highlight highlight-source-c++"><pre class="notranslate"><span class="pl-k">class</span> <span class="pl-en">Oscillator</span>
+{
+<span class="pl-k">private:</span>
+    <span class="pl-k">float</span> frequency;
+    <span class="pl-k">float</span> amplitude;
+    <span class="pl-k">float</span> phase;
+<span class="pl-k">public:</span>
+    <span class="pl-k">float</span> <span class="pl-en">process</span>();
+};</pre></div>
+<p>这便模拟了现实中的一个硬件模块</p>
+<div class="highlight highlight-text-tex-latex"><pre class="notranslate">Oscillator
+ ↓
+频率(frequency) → 440Hz
+振幅(amplitude) → 音量
+相位(phase) → 当前振动位置</pre></div>
+<h4>封装：防止外部乱修改</h4>
+<p>我还给类当中的三个变量做了private封装，在振荡器对象当中，phase不是普通变量，它代表声音运行过程中的内部状态，每次进行采样，振荡器就向前移动一点，如果外部代码随便修改，把phase赋值999999，那么声音就乱了套。</p>
+<p>那怎么修改变量呢，Public提供了一个稳定的接口，在这里，音乐制作人只需要调频率，调振幅，不必关系操作层以外的内部代码。</p>
+<p>Partial对象，这里我做了第二层抽象</p>
+<div class="highlight highlight-source-c++"><pre class="notranslate"><span class="pl-k">class</span> <span class="pl-en">Partial</span>
+{
+<span class="pl-k">private:</span>
+    Oscillator oscillator;
+};</pre></div>
+<p>这里体现了<strong>组合</strong>的面向对象的思想，泛音本质是一个特定频率的振荡器，而这里设置Partial并非多余的操作，Oscillator和Partial并非一个层次的概念，前者是描述一个波形，而后者是描述声音的组成关系，包括告诉我们，这是第几个谐波，振幅关系和相位关系。傅里叶告诉我们，一个复杂的声音当中包含多个不同性质的正弦波，而每一个正弦波分量，就是一个Partial。</p>
+<h3>std::vector 与引用：管理动态声音对象</h3>
+<div class="highlight highlight-source-c++"><pre class="notranslate">std::vector&lt;Partial&gt; partials;</pre></div>
+<p>在加法合成器中，我们不知道一个声音需要多少个谐波，因此我们不能使用固定数组。这个时候，C++的标准库提供了动态数组，std::vector，能让合成器根据需要增加任意数组的Partial并进行数组范围内的操作。</p>
+<div class="highlight highlight-source-c++"><pre class="notranslate"><span class="pl-k">for</span> (<span class="pl-k">auto</span>&amp; p : partials)
+        {
+            p.<span class="pl-c1">setFrequency</span>(frequency);
+            p.<span class="pl-c1">setAmplitude</span>(amplitude);
+            p.<span class="pl-c1">setInitialPhase</span>(phaseRad);
+            p.<span class="pl-c1">setSampleRate</span>(sampleRate);
+        }	</pre></div>
+<p>那这里当中的&amp;，并不是取地址操作，而是<strong>引用</strong>操作。在地址这个角度来看，p不是新的变量，而是partials的另一个名字，而for (auto&amp; p : partials)语句当中，Auto负责自动判断partials的数据类型。这样就不用复制变量到别的地址上了。</p>
+<p>音频的数据量巨大，如果一个合成器有100个谐波Partials，每个Partial包含多个变量，每次处理一个音频，都得复制100个对象，每秒进行44100次采样，那么大量复制必然造成无意义的性能浪费。</p>
+<p>在这里顺便解释下const引用，在当前代码中，Const引用不会被修改，因此对于filename和buffer的这些只需要读取，不需要修改的引用，因此就得使用const修饰符了。</p>
+<div class="highlight highlight-source-c++"><pre class="notranslate"><span class="pl-k">void</span> <span class="pl-en">GenerateWavFile</span>(
+    <span class="pl-k">const</span> std::string &amp;filename,
+    <span class="pl-k">const</span> std::vector&lt;<span class="pl-k">float</span>&gt; &amp;buffer
+)</pre></div>
+<h3>链式调用</h3>
+<p>在DAW当中，合成器首先是生成波形，然后再进行包络，LFO，效果等操作，链路上很像是串联，在这里，我们使用链式调用，通过返回 *this，在如下的代码当中</p>
+<div class="highlight highlight-source-c++"><pre class="notranslate">AdditiveSynth&amp; <span class="pl-en">SetBaseConfig</span>(<span class="pl-k">float</span> frequency, <span class="pl-k">float</span> amplitude, <span class="pl-k">float</span> initialPhaseDeg)
+    {
+        <span class="pl-c"><span class="pl-c">//</span>中间代码省略</span>
+        <span class="pl-k">return</span> *<span class="pl-c1">this</span>;
+    }</pre></div>
+<p>而后续调用synth.SetBaseConfig()，在这里，this赋值于Synth的地址，这样的话，返回的值就是对象synth本身，这样就可以链式调用，即</p>
+<div class="highlight highlight-source-c++"><pre class="notranslate">synth .SetBaseConfig() .Add() .Generate();</pre></div>
+<p>这种设计方式与硬件合成器的信号链非常相似。</p>
+<p>完整代码我已经放在仓库里面了，可供大家去学习。</p>
+<h2>从一个正弦波，到一台真正的合成器</h2>
+<p>到这里，我们已经完成了第一台基于傅里叶级数的加法合成器，最开始，我们只有一个简单的数学函数，sin(x)，它描述了自然界最基本的振动。</p>
+<p>之后我们通过傅里叶级数，发现复杂的声音并不是神秘的黑盒，而是大量不同频率正弦波的组合。然后，我们使用 C++ 将这些数学概念重新组织：</p>
+<pre class="notranslate"><code class="notranslate">正弦波 → Oscillator → Partial → AdditiveSynth → PCM数据 → WAV文件
+</code></pre>
+<p>最终，计算机不再只是记录声音，而开始拥有创造声音的能力，但是，这距离真正的电子乐器还有很长的距离。</p>
+<p>如何控制音符从出现到消失——ADSR和LFO<br>
+如何让声音更加丰富——滤波器<br>
+如何实现实施演奏——MIDI接口<br>
+如何演奏更丰富的音色——FM合成和波表合成</p>
+<p>下一期，我们将尝试让C++学会“控制声音”，加入ADSR和LFO，让一个简单的波形，第一次拥有类似真实乐器的动态变化。</p>
+<h2>附录 - 1 傅里叶级数公式的运用与讲解</h2>
+<p>首先设定函数的方程，求出目标函数的f(t)，然后根据傅里叶变换这把钥匙（这里用<strong>傅里叶级数余弦分量系数</strong>的形式，就不讨论由常规形式推导到常规形式）</p>
+<p>$$
+a_n=\frac{2}{T}\int_{0}^{T} f(t)\cos(n\omega_0 t),dt
+$$</p>
+<p>再通过积分运算，求出an和bn，之后将an，bn带进去，通过傅里叶级数的公式求出波形的叠加成分。</p>
+<p>$$
+f(t)=\frac{a_0}{2}+\sum_{n=1}^{\infty}\Bigl[a_n\cos(n\omega_0 t)+b_n\sin(n\omega_0 t)\Bigr]
+$$</p>
+<p>具体的讲解可以观看B站相关傅里叶讲解的视频，但需要有一定的高数基础</p>
+<h2>附录 - 2 用傅里叶级数推算出方波的谐波规律</h2>
+<p>方波的性质是中心对称，具有跃迁性，在周期为t，振幅为A的情况下，它的函数表达式如下：</p>
+<p>$$
+Square(x)=
+\begin{cases}
+-A, &amp; -T/2 &lt; x &lt; 0 \\
+A, &amp; 0 &lt; x &lt; T/2
+\end{cases}
+$$</p>
+<p>当然，根据中心对称性，方波要想翻转起来，只需要取负值就行。</p>
+<p>之后，我们把方波余弦分量当中，求出积分拆分成的前半部分和后半部分，即</p>
+<p>$$
+a_n=\frac{2A}{T}\left[\int_{0}^{T/2}\cos(n\omega_n t),dt+\int_{T/2}^{T}\cos(n\omega_n t),dt\right]
+$$</p>
+<p>我们要求出a0，将函数导入进去，也就是</p>
+<p>$$
+\begin{aligned}
+\int_{0}^{T} f(t),dt
+&amp;=\int_{0}^{T/2} A,dt+\int_{T/2}^{T} (-A),dt \\
+&amp;=A\cdot\frac{T}{2}-A\cdot\frac{T}{2} \\
+&amp;=0
+\end{aligned}
+$$</p>
+<p>得到a0=0。之后我们开始对a0下发到an，我们先求前半部分，</p>
+<p>由cos的积分公式</p>
+<p>$$
+\int_\ cos(n\omega_0 t) dt=\frac{1}{n \omega_0}sin(n\omega_n t)
+$$</p>
+<p>推算出前半部分：</p>
+<p>$$
+\begin{aligned}
+\int_{0}^{T/2} f(t),dt
+&amp;=\frac{2A}{T}\int_{0}^{T/2}\cos(n\omega_0 t)\\
+&amp;=\frac{2A}{T}\frac{1}{n\omega_0}\left[sin(n\omega_0\cdot\frac{T}{2})-sin0\right]\\
+&amp;=\frac{2A}{n\omega_0T}sin(n\omega_0\cdot\frac{T}{2})
+\end{aligned}
+$$</p>
+<p>以及后半部分：</p>
+<p>$$
+\begin{aligned}
+\int_{T/2}^{T} f(t),dt
+&amp;=-\frac{2A}{T}\int_{T/2}^{T}\cos(n\omega_0 t),dt\\
+&amp;=-\frac{2A}{n\omega_0T}\left[sin(n\omega_0\cdot T)
+-sin(n\omega_0\cdot\frac{T}{2})\right]\end{aligned}
+$$</p>
+<p>两式相加，得</p>
+<p>$$
+a_n=\frac{2A}{n\omega_0T}
+sin(n\omega_0\cdot\frac{T}{2})
+$$</p>
+<p>这里我们根据定义，得知T为周期，那么对应振动频率f0为<strong>1/T</strong>，而角频率<strong>ω0</strong>为三角函数每秒转过得弧度，根据高中物理，角频率，得知</p>
+<p>$$
+\omega_0 = 2\pi f_0 = \frac{2\pi}{T}
+$$</p>
+<p>因此，该式子可以进一步化简，得</p>
+<p>$$
+a_n=\frac{2A}{2n\pi}sin(2n\pi)
+$$</p>
+<p>而由于n为整数，根据诱导公式，2sin(2nπ)=0，因此，我们便得到<br>
+$$<br>
+a_n=0<br>
+$$</p>
+<p>这也就意味着该方波不存在余弦偶对称分量。</p>
+<p>同样，奇次波（正弦分量系数）的方波公式为：</p>
+<p>$$
+b_n=\frac{2A}{T}\left[\int_{0}^{T/2}\sin(n\omega_0 t),dt+\int_{T/2}^{T}\sin(n\omega_0 t),dt\right]
+$$</p>
+<p>而sin的求积分公式如下：</p>
+<p>$$
+\int_\ sin(n\omega_0 t) dt=-\frac{1}{n \omega_0}cos(n\omega_0 t)
+$$</p>
+<p>那么前半部分的求积分结果如下：</p>
+<p>$$
+\begin{aligned}
+\int_{0}^{T/2} f(t),dt
+&amp;=\frac{2A}{T}\int_{0}^{T/2}\sin(n\omega_0 t)\\
+&amp;=-\frac{2A}{n\omega_0T}\left[cos(n\omega_0\cdot\frac{T}{2})-1\right]\\
+\end{aligned}
+$$</p>
+<p>后半部分：</p>
+<p>$$
+\begin{aligned}
+\int_{T/2}^{T} f(t),dt
+&amp;=-\frac{2A}{T}\int_{T/2}^{T}\sin(n\omega_0 t),dt\\
+&amp;=\frac{2A}{n\omega_0T}\left[cos(n\omega_0\cdot T)
+-cos(n\omega_0\cdot\frac{T}{2})\right]\end{aligned}
+$$</p>
+<p>两式相加，得</p>
+<p>$$
+\frac{2A}{n\omega_0T}\left[1-2cos(n\omega_0\cdot\frac{T}{2}+)+cos(n\omega_0\cdot T)\right]
+$$</p>
+<p>把ω0T=2Pi, cos(2nπ)=1带进去，得</p>
+<p>$$
+b_n=\frac{2A}{n\pi}\left[1-cos(n\pi)\right]
+$$</p>
+<p>而这里[1-cos(nπ)]是方波特殊性质的有力证据，当n为偶数时，cos(nπ)=1，则bn=0，所以所有的偶次谐波全部消失，当n为奇数时，cos(nπ)=-1，则</p>
+<p>$$
+b_n=\frac{4A}{n\pi}
+$$</p>
+<p>这也就意味着，方波的傅里叶级数公式仅仅保留奇次项，再回到开头的公式，得到方波的傅里叶级数为：</p>
+<p>$$
+\mathit{Square} = \frac{4A}{\pi}\sum_{n=1}^{\infty}\frac{\sin\big((2n-1)\omega t\big)}{2n-1}
+$$</p>
+<p>其中，A为振幅，k为谐波的次数（由于仅仅存在奇次项谐波，因此是2n-1）</p></div>
+<div style="font-size:small;margin-top:8px;float:right;"></div>
+
+<button class="btn btn-block" type="button" onclick="openComments()" id="cmButton">评论</button>
+<div class="comments" id="comments"></div>
+
+</div>
+    <div id="footer"><div id="footer1">Copyright © <span id="copyrightYear"></span> <a href="https://kono3bpencil4301.github.io/kono3bpencil4301AudioLab.github.io">Blog Title</a></div>
+<div id="footer2">
+    <span id="runday"></span><span>Powered by <a href="https://meekdai.com/Gmeek.html" target="_blank">Gmeek</a></span>
+</div>
+
+<script>
+var now=new Date();
+document.getElementById("copyrightYear").innerHTML=now.getFullYear();
+
+if(""!=""){
+    var startSite=new Date("");
+    var diff=now.getTime()-startSite.getTime();
+    var diffDay=Math.floor(diff/(1000*60*60*24));
+    document.getElementById("runday").innerHTML="网站运行 "+diffDay+" 天"+" • ";
+}
+</script></div>
+</body>
+<script>
+var IconList={'sun': 'M8 10.5a2.5 2.5 0 100-5 2.5 2.5 0 000 5zM8 12a4 4 0 100-8 4 4 0 000 8zM8 0a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0V.75A.75.75 0 018 0zm0 13a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0v-1.5A.75.75 0 018 13zM2.343 2.343a.75.75 0 011.061 0l1.06 1.061a.75.75 0 01-1.06 1.06l-1.06-1.06a.75.75 0 010-1.06zm9.193 9.193a.75.75 0 011.06 0l1.061 1.06a.75.75 0 01-1.06 1.061l-1.061-1.06a.75.75 0 010-1.061zM16 8a.75.75 0 01-.75.75h-1.5a.75.75 0 010-1.5h1.5A.75.75 0 0116 8zM3 8a.75.75 0 01-.75.75H.75a.75.75 0 010-1.5h1.5A.75.75 0 013 8zm10.657-5.657a.75.75 0 010 1.061l-1.061 1.06a.75.75 0 11-1.06-1.06l1.06-1.06a.75.75 0 011.06 0zm-9.193 9.193a.75.75 0 010 1.06l-1.06 1.061a.75.75 0 11-1.061-1.06l1.06-1.061a.75.75 0 011.061 0z', 'moon': 'M9.598 1.591a.75.75 0 01.785-.175 7 7 0 11-8.967 8.967.75.75 0 01.961-.96 5.5 5.5 0 007.046-7.046.75.75 0 01.175-.786zm1.616 1.945a7 7 0 01-7.678 7.678 5.5 5.5 0 107.678-7.678z', 'sync': 'M1.705 8.005a.75.75 0 0 1 .834.656 5.5 5.5 0 0 0 9.592 2.97l-1.204-1.204a.25.25 0 0 1 .177-.427h3.646a.25.25 0 0 1 .25.25v3.646a.25.25 0 0 1-.427.177l-1.38-1.38A7.002 7.002 0 0 1 1.05 8.84a.75.75 0 0 1 .656-.834ZM8 2.5a5.487 5.487 0 0 0-4.131 1.869l1.204 1.204A.25.25 0 0 1 4.896 6H1.25A.25.25 0 0 1 1 5.75V2.104a.25.25 0 0 1 .427-.177l1.38 1.38A7.002 7.002 0 0 1 14.95 7.16a.75.75 0 0 1-1.49.178A5.5 5.5 0 0 0 8 2.5Z', 'home': 'M6.906.664a1.749 1.749 0 0 1 2.187 0l5.25 4.2c.415.332.657.835.657 1.367v7.019A1.75 1.75 0 0 1 13.25 15h-3.5a.75.75 0 0 1-.75-.75V9H7v5.25a.75.75 0 0 1-.75.75h-3.5A1.75 1.75 0 0 1 1 13.25V6.23c0-.531.242-1.034.657-1.366l5.25-4.2Zm1.25 1.171a.25.25 0 0 0-.312 0l-5.25 4.2a.25.25 0 0 0-.094.196v7.019c0 .138.112.25.25.25H5.5V8.25a.75.75 0 0 1 .75-.75h3.5a.75.75 0 0 1 .75.75v5.25h2.75a.25.25 0 0 0 .25-.25V6.23a.25.25 0 0 0-.094-.195Z', 'github': 'M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z', 'copy': 'M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z', 'check': 'M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z'};
+var utterancesLoad=0;
+
+let themeSettings={
+    "dark": ["dark","moon","#00f0ff","dark-blue"],
+    "light": ["light","sun","#ff5000","github-light"],
+    "auto": ["auto","sync","","preferred-color-scheme"]
+};
+function changeTheme(mode, icon, color, utheme){
+    document.documentElement.setAttribute("data-color-mode",mode);
+    document.getElementById("themeSwitch").setAttribute("d",value=IconList[icon]);
+    document.getElementById("themeSwitch").parentNode.style.color=color;
+    if(utterancesLoad==1){utterancesTheme(utheme);}
+}
+function modeSwitch(){
+    let currentMode=document.documentElement.getAttribute('data-color-mode');
+    let newMode = currentMode === "light" ? "dark" : currentMode === "dark" ? "auto" : "light";
+    localStorage.setItem("meek_theme", newMode);
+    if(themeSettings[newMode]){
+        changeTheme(...themeSettings[newMode]);
+    }
+}
+function utterancesTheme(theme){
+    const message={type:'set-theme',theme: theme};
+    const iframe=document.getElementsByClassName('utterances-frame')[0];
+    iframe.contentWindow.postMessage(message,'https://utteranc.es');
+}
+if(themeSettings[theme]){changeTheme(...themeSettings[theme]);}
+console.log("\n %c Gmeek last https://github.com/Meekdai/Gmeek \n","padding:5px 0;background:#02d81d;color:#fff");
+</script>
+
+<script>
+document.getElementById("pathHome").setAttribute("d",IconList["home"]);
+document.getElementById("pathIssue").setAttribute("d",IconList["github"]);
+
+
+
+function openComments(){
+    cm=document.getElementById("comments");
+    cmButton=document.getElementById("cmButton");
+    cmButton.disabled=true;
+    cmButton.innerHTML="loading";
+    span=document.createElement("span");
+    span.setAttribute("class","AnimatedEllipsis");
+    cmButton.appendChild(span);
+
+    script=document.createElement("script");
+    script.setAttribute("src","https://utteranc.es/client.js");
+    script.setAttribute("repo","kono3bpencil4301/kono3bpencil4301AudioLab.github.io");
+    script.setAttribute("issue-term","title");
+    
+    if(localStorage.getItem("meek_theme")=="dark"){script.setAttribute("theme","dark-blue");}
+    else if(localStorage.getItem("meek_theme")=="light") {script.setAttribute("theme","github-light");}
+    else{script.setAttribute("theme","preferred-color-scheme");}
+    
+    script.setAttribute("crossorigin","anonymous");
+    script.setAttribute("async","");
+    cm.appendChild(script);
+
+    int=self.setInterval("iFrameLoading()",200);
+}
+
+function iFrameLoading(){
+    var utterances=document.getElementsByClassName('utterances');
+    if(utterances.length==1){
+        if(utterances[0].style.height!=""){
+            utterancesLoad=1;
+            int=window.clearInterval(int);
+            document.getElementById("cmButton").style.display="none";
+            console.log("utterances Load OK");
+        }
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    const createClipboardHTML = (codeContent, additionalClasses = '') => `
+        <pre class="notranslate"><code class="notranslate">${codeContent}</code></pre>
+        <div class="clipboard-container position-absolute right-0 top-0 ${additionalClasses}">
+            <clipboard-copy class="ClipboardButton btn m-2 p-0" role="button" style="display: inherit;">
+                <svg height="16" width="16" class="octicon octicon-copy m-2"><path d="${IconList["copy"]}"></path></svg>
+                <svg height="16" width="16" class="octicon octicon-check color-fg-success m-2 d-none"><path d="${IconList["check"]}"></path></svg>
+            </clipboard-copy>
+            <div class="copy-feedback">Copied!</div>
+        </div>
+    `;
+
+    const handleCodeElements = (selector = '') => {
+        document.querySelectorAll(selector).forEach(codeElement => {
+            const codeContent = codeElement.innerHTML;
+            const newStructure = document.createElement('div');
+            newStructure.className = 'snippet-clipboard-content position-relative overflow-auto';
+            newStructure.innerHTML = createClipboardHTML(codeContent);
+
+            const parentElement = codeElement.parentElement;
+            if (selector.includes('highlight')) {
+                parentElement.insertBefore(newStructure, codeElement.nextSibling);
+                parentElement.removeChild(codeElement);
+            } else {
+                parentElement.parentElement.replaceChild(newStructure, parentElement);
+            }
+        });
+    };
+
+    handleCodeElements('pre.notranslate > code.notranslate');
+    handleCodeElements('div.highlight > pre.notranslate');
+
+    let currentFeedback = null;
+    document.querySelectorAll('clipboard-copy').forEach(copyButton => {
+        copyButton.addEventListener('click', () => {
+            const codeContent = copyButton.closest('.snippet-clipboard-content').innerText;
+            const tempTextArea = document.createElement('textarea');
+            tempTextArea.value = codeContent;
+            document.body.appendChild(tempTextArea);
+            tempTextArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempTextArea);
+
+            const copyIcon = copyButton.querySelector('.octicon-copy');
+            const checkIcon = copyButton.querySelector('.octicon-check');
+            const copyFeedback = copyButton.nextElementSibling;
+
+            if (currentFeedback && currentFeedback !== copyFeedback) {currentFeedback.style.display = 'none';}
+            currentFeedback = copyFeedback;
+
+            copyIcon.classList.add('d-none');
+            checkIcon.classList.remove('d-none');
+            copyFeedback.style.display = 'block';
+            copyButton.style.borderColor = 'var(--color-success-fg)';
+
+            setTimeout(() => {
+                copyIcon.classList.remove('d-none');
+                checkIcon.classList.add('d-none');
+                copyFeedback.style.display = 'none';
+                copyButton.style.borderColor = '';
+            }, 2000);
+        });
+    });
+});
+
+</script>
+<script>MathJax = {tex: {inlineMath: [["$", "$"]]}};</script><script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+</html>
