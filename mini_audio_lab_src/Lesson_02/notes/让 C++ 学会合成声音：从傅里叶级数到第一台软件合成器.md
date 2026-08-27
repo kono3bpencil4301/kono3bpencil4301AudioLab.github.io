@@ -29,18 +29,22 @@
 答案就藏在人们对自然振荡的研究当中。
 
 首先严格来说，这里应该称为**正弦函数和余弦函数**，因为两者本质上只是相位不同：
+
 $$
 y=\cos\left(2\pi f t\right)=\sin\left(2\pi f t+\frac{\pi}{2}\right)
 $$
+
 高中数学告诉过我们，正弦函数与余弦函数在坐标系上几乎相同，它们本质上描述的是同一周期的周期运动，只是在时间轴上存在一个偏移，而神奇的地方在于：**正弦函数似乎天生就是为描述振动而存在的。**
 
 在高中物理当中，我们学过简谐运动，这些系统最简单、最理想化的运动形式，都满足：
+
 $$
 x(t)=Acos(ωt+ϕ)
 $$
 也就是说，一个物体如果受到与位移成正比、方向相反的恢复力，它的运动轨迹天然就是正弦曲线。它正好就是正弦或余弦函数的形式。
 
 但是，这还不是全部，真正让正弦函数特殊的是，它拥有一种近乎不可思议的性质：**求导之后，它依然保持自己的形态。**
+
 $$
 \frac{d}{dx}\sin(x)=\cos(x)
 $$
@@ -64,9 +68,11 @@ sin
 ```
 
 这意味着很多事，在本期节目当中，位移，速度，加速度，本质上就是不断求导的关系。而对于正弦运动，位移、速度、加速度虽然大小不断变化，但始终保持同样的周期结构。而作为求导的“逆运算”的部分，求积分也是如此。
+
 $$
 ∫sin(x)dx=−cos(x)
 $$
+
 于是，在自然界中，通过运算机械振动，最终能推导出争先运动，微积分运动能推算出正弦函数保持的自身运动形式，而在工程学当中，信号系统，也可以用正弦波来分析与运算了。
 
 因此，傅里叶变换此时也提醒着我们：**任何复杂的周期信号，都可以分解为多个不同频率的正弦波。**
@@ -106,30 +112,39 @@ $$
 ### 方波
 
 ![方波](./additive_square_wave.jpg)
+
 $$
 \mathit{Square} = \frac{4}{\pi}\sum_{k=1}^{\infty}\frac{\sin\big((2k-1)\omega t\big)}{2k-1}
 $$
+
 其逐项展开式为：
+
 $$
 \mathrm{Square}(t)=\frac{4}{\pi}\Big(\sin(\omega t)+\frac{1}{3}\sin(3\omega t)+\frac{1}{5}\sin(5\omega t)+\dots\Big)
 $$
+
 在方波当中，我们可以注意到它并没有拥有偶次分量，方波是具有特殊对称性的波形，而波形的对称性决定了哪些频率成分会出现。
 
 ### 锯齿波
 
 ![锯齿波](./additive_saw_wave.jpg)
+
 $$
 \mathit{Sawtooth} = \frac{2}{\pi}\sum_{n=1}^{\infty}\frac{(-1)^{n+1}}{n}\sin(n\omega t)
 $$
+
 其逐项展开式为：
+
 $$
 \mathrm{Sawtooth}(t)=\frac{1}{\pi}\Big(\sin(\omega t)+\frac{1}{2}\sin(2\omega t)+\frac{1}{3}\sin(3\omega t)+\dots\Big)
 $$
+
 锯齿波拥有所有整数谐波，公式当中，由于拥有丰满的锯齿波谐波，因此其高频谐波较完整，很多经典音色，如Supersaw（甚至从名字当中可以看出），Acid音色，Reese音色都是拿Saw音色做基底的。
 
 ### 三角波
 
 ![三角波](./additive_triangle_wave.jpg)
+
 $$
 \mathit{Triangle}= \frac{8}{\pi^2}\sum_{k=0}^{\infty}\frac{(-1)^k}{(2k+1)^2}\sin\big((2k+1)\omega t\big)
 $$
@@ -276,10 +291,13 @@ synth .SetBaseConfig() .Add() .Generate();
 ## 附录 - 1 傅里叶级数公式的运用与讲解
 
 首先设定函数的方程，求出目标函数的f(t)，然后根据傅里叶变换这把钥匙（这里用**傅里叶级数余弦分量系数**的形式，就不讨论由常规形式推导到常规形式）
+
 $$
 a_n=\frac{2}{T}\int_{0}^{T} f(t)\cos(n\omega_0 t)\,dt
 $$
+
 再通过积分运算，求出an和bn，之后将an，bn带进去，通过傅里叶级数的公式求出波形的叠加成分。
+
 $$
 f(t)=\frac{a_0}{2}+\sum_{n=1}^{\infty}\Bigl[a_n\cos(n\omega_0 t)+b_n\sin(n\omega_0 t)\Bigr]
 $$
@@ -288,20 +306,25 @@ $$
 ## 附录 - 2 用傅里叶级数推算出方波的谐波规律
 
 方波的性质是中心对称，具有跃迁性，在周期为t，振幅为A的情况下，它的函数表达式如下：
+
 $$
 Square(x)=
- \left\{\begin{matrix} 
-A(x＞t/2)\\
- -A(x < t/2)
-\end{matrix}\right.
+\begin{cases}
+-A, & -T/2 < x < 0 \\
+A, & 0 < x < T/2
+\end{cases}
 $$
+
 当然，根据中心对称性，方波要想翻转起来，只需要取负值就行。
 
 之后，我们把方波余弦分量当中，求出积分拆分成的前半部分和后半部分，即
+
 $$
 a_n=\frac{2A}{T}\left[\int_{0}^{T/2}\cos(n\omega_n t)\,dt+\int_{T/2}^{T}\cos(n\omega_n t)\,dt\right]
 $$
+
 我们要求出a0，将函数导入进去，也就是
+
 $$
 \begin{aligned}
 \int_{0}^{T} f(t)\,dt
@@ -310,13 +333,17 @@ $$
 &=0
 \end{aligned}
 $$
+
 得到a0=0。之后我们开始对a0下发到an，我们先求前半部分，
 
 由cos的积分公式
+
 $$
 \int_\ cos(n\omega_0 t) dt=\frac{1}{n \omega_0}sin(n\omega_n t)
 $$
+
 推算出前半部分：
+
 $$
 \begin{aligned}
 \int_{0}^{T/2} f(t)\,dt
@@ -325,7 +352,9 @@ $$
 &=\frac{2A}{n\omega_0T}sin(n\omega_0\cdot\frac{T}{2})
 \end{aligned}
 $$
+
 以及后半部分：
+
 $$
 \begin{aligned}
 \int_{T/2}^{T} f(t)\,dt
@@ -333,34 +362,46 @@ $$
 &=-\frac{2A}{n\omega_0T}\left[sin(n\omega_0\cdot T)
 -sin(n\omega_0\cdot\frac{T}{2})\right]\end{aligned}
 $$
+
 两式相加，得
+
 $$
 a_n=\frac{2A}{n\omega_0T}
 sin(n\omega_0\cdot\frac{T}{2})
 $$
+
 这里我们根据定义，得知T为周期，那么对应振动频率f0为**1/T**，而角频率**ω0**为三角函数每秒转过得弧度，根据高中物理，角频率，得知
+
 $$
 \omega_0 = 2\pi f_0 = \frac{2\pi}{T}
 $$
+
 因此，该式子可以进一步化简，得
+
 $$
 a_n=\frac{2A}{2n\pi}sin(2n\pi)
 $$
+
 而由于n为整数，根据诱导公式，2sin(2nπ)=0，因此，我们便得到
 $$
 a_n=0
 $$
+
 这也就意味着该方波不存在余弦偶对称分量。
 
 同样，奇次波（正弦分量系数）的方波公式为：
 $$
 b_n=\frac{2A}{T}\left[\int_{0}^{T/2}\sin(n\omega_0 t)\,dt+\int_{T/2}^{T}\sin(n\omega_0 t)\,dt\right]
 $$
+
 而sin的求积分公式如下：
+
 $$
 \int_\ sin(n\omega_0 t) dt=-\frac{1}{n \omega_0}cos(n\omega_0 t)
 $$
+
 那么前半部分的求积分结果如下：
+
 $$
 \begin{aligned}
 \int_{0}^{T/2} f(t)\,dt
@@ -368,7 +409,9 @@ $$
 &=-\frac{2A}{n\omega_0T}\left[cos(n\omega_0\cdot\frac{T}{2})-1\right]\\
 \end{aligned}
 $$
+
 后半部分：
+
 $$
 \begin{aligned}
 \int_{T/2}^{T} f(t)\,dt
@@ -376,20 +419,29 @@ $$
 &=\frac{2A}{n\omega_0T}\left[cos(n\omega_0\cdot T)
 -cos(n\omega_0\cdot\frac{T}{2})\right]\end{aligned}
 $$
+
 两式相加，得
+
 $$
 \frac{2A}{n\omega_0T}\left[1-2cos(n\omega_0\cdot\frac{T}{2}+)+cos(n\omega_0\cdot T)\right]
 $$
+
 把ω0T=2Pi, cos(2nπ)=1带进去，得
+
 $$
 b_n=\frac{2A}{n\pi}\left[1-cos(n\pi)\right]
 $$
+
 而这里[1-cos(nπ)]是方波特殊性质的有力证据，当n为偶数时，cos(nπ)=1，则bn=0，所以所有的偶次谐波全部消失，当n为奇数时，cos(nπ)=-1，则
+
 $$
 b_n=\frac{4A}{n\pi}
 $$
+
 这也就意味着，方波的傅里叶级数公式仅仅保留奇次项，再回到开头的公式，得到方波的傅里叶级数为：
+
 $$
 \mathit{Square} = \frac{4A}{\pi}\sum_{n=1}^{\infty}\frac{\sin\big((2n-1)\omega t\big)}{2n-1}
 $$
+
 其中，A为振幅，k为谐波的次数（由于仅仅存在奇次项谐波，因此是2n-1）
