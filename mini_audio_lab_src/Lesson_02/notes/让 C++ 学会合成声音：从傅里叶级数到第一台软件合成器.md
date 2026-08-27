@@ -393,6 +393,7 @@ $$
 这也就意味着该方波不存在余弦偶对称分量。
 
 同样，奇次波（正弦分量系数）的方波公式为：
+
 $$
 b_n=\frac{2A}{T}\left[\int_{0}^{T/2}\sin(n\omega_0 t)\,dt+\int_{T/2}^{T}\sin(n\omega_0 t)\,dt\right]
 $$
