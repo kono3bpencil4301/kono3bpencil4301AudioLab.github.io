@@ -10,9 +10,13 @@
         let theme = localStorage.getItem("meek_theme") || "light";
         document.documentElement.setAttribute("data-color-mode", theme);
     </script>
-<meta name="description" content="作为一个电子音乐爱好者，同时也作为一个准程序员，我总想手搓出一台合成器，借此机会，我向大家从音频学的底层讲起，结合C++语言原生库，不依赖任何第三方音频框架，从零开始手搓出合成器。">
+<meta name="description" content="# 让 C++ 发出第一声：从 PCM 样本到手写 WAV 文件
+
+ 作为一个电子音乐爱好者，同时也作为一个准程序员，我总想手搓出一台合成器，借此机会，我向大家从音频学的底层讲起，结合C++语言原生库，不依赖任何第三方音频框架，从零开始手搓出合成器。">
 <meta property="og:title" content="让 C++ 发出第一声：从 PCM 样本到手写 WAV 文件">
-<meta property="og:description" content="作为一个电子音乐爱好者，同时也作为一个准程序员，我总想手搓出一台合成器，借此机会，我向大家从音频学的底层讲起，结合C++语言原生库，不依赖任何第三方音频框架，从零开始手搓出合成器。">
+<meta property="og:description" content="# 让 C++ 发出第一声：从 PCM 样本到手写 WAV 文件
+
+ 作为一个电子音乐爱好者，同时也作为一个准程序员，我总想手搓出一台合成器，借此机会，我向大家从音频学的底层讲起，结合C++语言原生库，不依赖任何第三方音频框架，从零开始手搓出合成器。">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://kono3bpencil4301.github.io/kono3bpencil4301AudioLab.github.io/post/rang-%20C%2B%2B%20-fa-chu-di-yi-sheng-%EF%BC%9A-cong-%20PCM%20-yang-ben-dao-shou-xie-%20WAV%20-wen-jian.html">
 <meta property="og:image" content="https://github.githubassets.com/favicons/favicon.svg">
@@ -83,21 +87,22 @@ body{box-sizing: border-box;min-width: 200px;max-width: 900px;margin: 20px auto;
 </div>
 </div>
     <div id="content">
-<div class="markdown-body" id="postBody"><p>作为一个电子音乐爱好者，同时也作为一个准程序员，我总想手搓出一台合成器，借此机会，我向大家从音频学的底层讲起，结合C++语言原生库，不依赖任何第三方音频框架，从零开始手搓出合成器。</p>
+<div class="markdown-body" id="postBody"><h1>让 C++ 发出第一声：从 PCM 样本到手写 WAV 文件</h1>
+<p>作为一个电子音乐爱好者，同时也作为一个准程序员，我总想手搓出一台合成器，借此机会，我向大家从音频学的底层讲起，结合C++语言原生库，不依赖任何第三方音频框架，从零开始手搓出合成器。</p>
 <p>C++这门语言就不必多介绍了，这里先介绍计算机是怎么理解声音的，想象下，一个声音在现实当中，是不是通过空气等媒介压力变化，通过声源振荡产生的。这也是现实发声的原理，而在计算机的世界中，声音通常将振荡的波通过离散的数字序列储存起来，而这里也引出一系列的概念。</p>
 <h2>音频基础概念</h2>
 <h3>采样点</h3>
-<p>由于计算机音频采用的是离散的数字序列，因此在一段音频当中，每隔一段时间取得的一个数值样本，用于记录该时刻，声音信号的振幅大小，这个点代表的数值叫做采样点。也就是<br>
-$$<br>
-x[n]=x(nTs)<br>
-$$<br>
-采样点是数字音频最基础的数据单元，像一台高速相机，每秒拍摄几万张声波的声波振幅的高度照片。</p>
+<p>由于计算机音频采用的是离散的数字序列，因此在一段音频当中，每隔一段时间取得的一个数值样本，用于记录该时刻，声音信号的振幅大小，这个点代表的数值叫做采样点。也就是</p>
+<p>$$
+x[n]=x(nTs)
+$$</p>
+<p>采样点是数字音频最基础的数据单元，像一台高速相机，每秒拍摄几万张声波的声波振幅的高度照片。</p>
 <h3>采样率</h3>
-<p>采样率在计算机的语言当中，以多快的频率来记录，单位为Hz。采样率决定数字系统能够表示的最高频率范围，但对应的文件大小也就越大。而根据奈奎斯特采样定理：<br>
-$$<br>
-fs​&gt;2fmax​<br>
-$$<br>
-且由于人耳可听范围约20Hz~20kHz，根据奈奎斯特采样定理，需要超过40kHz采样率，因此44.1kHz成为消费音乐领域的重要标准，而影视级别的则略高于CD级别的，为48000Hz。</p>
+<p>采样率在计算机的语言当中，以多快的频率来记录，单位为Hz。采样率决定数字系统能够表示的最高频率范围，但对应的文件大小也就越大。而根据奈奎斯特采样定理：</p>
+<p>$$
+fs​&gt;2fmax​
+$$</p>
+<p>且由于人耳可听范围约20Hz~20kHz，根据奈奎斯特采样定理，需要超过40kHz采样率，因此44.1kHz成为消费音乐领域的重要标准，而影视级别的则略高于CD级别的，为48000Hz。</p>
 <h3>位深</h3>
 <p>如果采样率记录的是声波在时间维度方面的信息，那么位深则是记录了一段音频中，采样点的纵向动态程度。位深表示每一个采样点使用多少二进制位进行存储，它决定振幅量化的精度。位深越高，每个采样点能够表示的振幅等级越多，动态范围也越大。而由于计算机采用二进制，因此位深的单位为Bit。</p>
 <p>8bit位深，对应的等级范围是-128~127，而16bit则是−32768∼32767。CD 音频标准采用 16bit/44.1kHz PCM。</p>
@@ -118,11 +123,11 @@ $$<br>
 <p>麦克风负责捕捉空气压力的变化，然后麦克风将变化转换为模拟电信号，之后计算机负责对电信号进行采样、量化和编码，最后数据以PCM的数据储存起来。</p>
 </blockquote>
 <p>在C++的代码语言中，就是将double value 转换为int16_t sample，也就是浮点振幅转换为PCM整数。</p>
-<p>顺便我们也可以得出公式，用于计算Wav文件的数据量大小，即<br>
-$$<br>
-ByteRate=SampleRate×Channels×BitsPerSample/8<br>
-$$<br>
-注意这个8，意思是计算机将Bit（比特）数据转换为储存的基本单位，即Byte（字节）。1Byte=8Bit。</p>
+<p>顺便我们也可以得出公式，用于计算Wav文件的数据量大小，即</p>
+<p>$$
+ByteRate=SampleRate×Channels×BitsPerSample/8
+$$</p>
+<p>注意这个8，意思是计算机将Bit（比特）数据转换为储存的基本单位，即Byte（字节）。1Byte=8Bit。</p>
 <p>让我们来计算下，在CD音质下（44100Hz，双声道，16bit），一分钟的Wav音频，大小为44100×2×16/8*60=10,584,000 字节，大约为10MB。</p>
 <h2>关于Wav文件格式</h2>
 <p>那么PCM是里面的数据，总得要个容器得包装起来吧，就像一杯牛奶，里面的牛奶是PCM数据，而Wav格式则是这个杯子。同样，后面视频中的MP4这个格式也是杯子，真正的牛奶则是H264之类的编码。</p>
@@ -225,22 +230,22 @@ data Chunk
     out.<span class="pl-c1">write</span>(byte, <span class="pl-c1">4</span>);
 }</pre></div>
 <h3>让正弦波粉墨登场</h3>
-<p>WAV 文件结构已经准备完成，接下来缺少最后一个东西：PCM 数据。这里我们拿最简单的正弦波举例，正弦波的连续信号为<br>
-$$<br>
-x(t)=Asin(2πft)<br>
-$$<br>
-而转换为离散的数字信号，则是：<br>
-$$<br>
-x[n]=Asin(2πfn/fs​)<br>
-$$<br>
-对应代码，则是</p>
+<p>WAV 文件结构已经准备完成，接下来缺少最后一个东西：PCM 数据。这里我们拿最简单的正弦波举例，正弦波的连续信号为</p>
+<p>$$
+x(t)=Asin(2πft)
+$$</p>
+<p>而转换为离散的数字信号，则是：</p>
+<p>$$
+x[n]=Asin(2πfn/fs​)
+$$</p>
+<p>对应代码，则是</p>
 <div class="highlight highlight-source-c++"><pre class="notranslate"><span class="pl-k">double</span> value = amplitude * <span class="pl-en">sin</span>(phase);</pre></div>
 <h4>相位累加器：从正弦波到 Oscillator</h4>
-<p>相位累加器是当代数字振荡器的核心，它解释了，如何让一个正弦波，到发出声响的振荡器，毕竟，每次到一个采样点，都得重新计算sin(2<em>pi</em>f*t)效率很低，因此我们可以考虑计算完当前phase后，每次增加<br>
-$$<br>
-\Delta\phi = \frac{2\pi f}{f_s}<br>
-$$<br>
-对应代码实现如下：</p>
+<p>相位累加器是当代数字振荡器的核心，它解释了，如何让一个正弦波，到发出声响的振荡器，毕竟，每次到一个采样点，都得重新计算sin(2<em>pi</em>f*t)效率很低，因此我们可以考虑计算完当前phase后，每次增加</p>
+<p>$$
+\Delta\phi = \frac{2\pi f}{f_s}
+$$</p>
+<p>对应代码实现如下：</p>
 <div class="highlight highlight-source-c++"><pre class="notranslate"><span class="pl-k">double</span> phase = <span class="pl-c1">0.0</span>;
     <span class="pl-c"><span class="pl-c">//</span> 每帧的相位增量 = 2π × 频率 / 采样率</span>
     <span class="pl-k">const</span> <span class="pl-k">double</span> phase_step = <span class="pl-c1">2.0</span> * <span class="pl-c1">PI</span> * frequency / sampleRate;
@@ -436,6 +441,6 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 </script>
-
+<script>MathJax = {tex: {inlineMath: [["$", "$"]]}};</script><script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 
 </html>
